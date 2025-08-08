@@ -1,0 +1,20 @@
+<routes>
+    <!-- Vehicle types -->
+    <vType id="regular" vClass="passenger" length="5.0" maxSpeed="50" color="yellow"/>
+    <vType id="emergency" vClass="emergency" length="7.0" maxSpeed="80" color="red"/>
+    
+    <!-- Routes for each direction -->
+    <route id="north_south" edges="north_in south_out"/>
+    <route id="south_north" edges="south_in north_out"/>
+    <route id="east_west" edges="east_in west_out"/>
+    <route id="west_east" edges="west_in east_out"/>
+    
+    <!-- Regular vehicles -->
+    <vehicle id="car1" type="regular" route="north_south" depart="0"/>
+    <vehicle id="car2" type="regular" route="south_north" depart="5"/>
+    <vehicle id="car3" type="regular" route="east_west" depart="10"/>
+    <vehicle id="car4" type="regular" route="west_east" depart="15"/>
+    
+    <!-- Emergency vehicle -->
+    <vehicle id="ambulance1" type="emergency" route="north_south" depart="20"/>
+</routes>
