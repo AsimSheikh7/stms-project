@@ -2,6 +2,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import traceback
 import datetime
+import jwt
+from functools import wraps
+from config import DevelopmentConfig
+
 
 # traci will be imported/used by simulation.start_simulation
 import traci as traci_module
@@ -16,6 +20,7 @@ CORS(app)
 # SQLite DB file
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///stms.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["JWT_SECRET_KEY"] = "your-secret-key-change-this-in-production"  # TODO: Will update it to use env
 
 db.init_app(app)
 
@@ -42,6 +47,147 @@ def ensure_db_and_default_user():
             print("Created default admin user: admin/admin (email field = 'admin').")
         else:
             print("Default admin user already exists.")
+
+
+def token_required(f):
+    """Decorator to require JWT token for protected routes."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        # Check if token is in the Authorization header
+        if 'Authorization' in request.headers:
+            auth_header = request.headers['Authorization']
+            try:
+                token = auth_header.split(" ")[1]  # Bearer <token>
+            except IndexError:
+                return jsonify({'message': 'Invalid token format'}), 401
+        
+        if not token:
+            return jsonify({'message': 'Token is missing'}), 401
+        
+        try:
+            data = jwt.decode(token, app.config['JWT_SECRET_KEY'], algorithms=['HS256'])
+            current_user = User.query.filter_by(email=data['email']).first()
+            if not current_user:
+                return jsonify({'message': 'Token is invalid'}), 401
+        except jwt.ExpiredSignatureError:
+            return jsonify({'message': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'message': 'Token is invalid'}), 401
+        
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
+
+
+def admin_required(f):
+    """Decorator to require admin role for protected routes."""
+    @wraps(f)
+    def decorated(current_user, *args, **kwargs):
+        if current_user.role != 'admin':
+            return jsonify({'message': 'Admin access required'}), 403
+        return f(current_user, *args, **kwargs)
+    
+    return decorated
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    """Authenticate user and return JWT token."""
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({'message': 'Username and password required'}), 400
+    
+    username = data['username']
+    password = data['password']
+    
+    with app.app_context():
+        user = User.query.filter_by(email=username).first()
+        
+        if user and check_password_hash(user.password_hash, password):
+            # Generate JWT token
+            token = jwt.encode({
+                'email': user.email,
+                'role': user.role,
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+            }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
+            
+            return jsonify({
+                'token': token,
+                'user': {
+                    'email': user.email,
+                    'role': user.role
+                },
+                'expires_in': 24 * 60 * 60  # 24 hours in seconds
+            }), 200
+        
+        return jsonify({'message': 'Invalid credentials'}), 401
+
+
+@app.route("/api/users", methods=["POST"])
+@token_required
+@admin_required
+def create_user(current_user):
+    """Create a new user (admin only)."""
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password'):
+        return jsonify({'message': 'Username and password required'}), 400
+    
+    username = data['username']
+    password = data['password']
+    role = data.get('role', 'user')  # Default to 'user' role
+    
+    # Validate role
+    if role not in ['user', 'admin']:
+        return jsonify({'message': 'Invalid role. Must be "user" or "admin"'}), 400
+    
+    with app.app_context():
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=username).first()
+        if existing_user:
+            return jsonify({'message': 'User already exists'}), 409
+        
+        # Create new user
+        new_user = User(
+            email=username,
+            password_hash=generate_password_hash(password),
+            role=role
+        )
+        
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+            
+            return jsonify({
+                'message': 'User created successfully',
+                'user': {
+                    'email': new_user.email,
+                    'role': new_user.role
+                }
+            }), 201
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'message': 'Failed to create user'}), 500
+
+
+@app.route("/api/users", methods=["GET"])
+@token_required
+@admin_required
+def list_users(current_user):
+    """List all users (admin only)."""
+    with app.app_context():
+        users = User.query.all()
+        return jsonify([
+            {
+                'id': user.id,
+                'email': user.email,
+                'role': user.role
+            } for user in users
+        ]), 200
 
 
 def restart_simulation():
@@ -140,7 +286,8 @@ def store_sensor_readings(sensors):
 
 
 @app.route("/api/sensors", methods=["GET"])
-def sensors():
+@token_required
+def sensors(current_user):
     global traci, sensor_generator
     try:
         # Start or restart if no simulation running
@@ -177,7 +324,8 @@ def sensors():
 
 
 @app.route("/api/signal", methods=["POST"])
-def signal():
+@token_required
+def signal(current_user):
     global traci, sensor_generator
     try:
         if not traci or traci.simulation.getMinExpectedNumber() == 0:
@@ -211,7 +359,8 @@ def signal():
 
 
 @app.route("/api/simulations", methods=["GET"])
-def list_simulations():
+@token_required
+def list_simulations(current_user):
     """Return list of simulations (id, start_time, end_time)."""
     with app.app_context():
         sims = Simulation.query.order_by(Simulation.id.desc()).limit(50).all()
@@ -222,7 +371,8 @@ def list_simulations():
 
 
 @app.route("/api/traffic/<int:simulation_id>", methods=["GET"])
-def get_traffic_for_sim(simulation_id):
+@token_required
+def get_traffic_for_sim(current_user, simulation_id):
     """Return latest traffic rows for a simulation (paginated simple)."""
     with app.app_context():
         rows = TrafficData.query.filter_by(simulation_id=simulation_id).order_by(TrafficData.timestamp.asc()).limit(2000).all()
