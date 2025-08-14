@@ -147,9 +147,9 @@
 
     <tlLogic id="junction1" type="static" programID="0" offset="0">
         <phase duration="42" state="GGGggrrrrrGGGggrrrrr"/>
-        <phase duration="3"  state="yyyyyrrrrryyyyyrrrrr"/>
+        <phase duration="5"  state="yyyyyrrrrryyyyyrrrrr"/>
         <phase duration="42" state="rrrrrGGGggrrrrrGGGgg"/>
-        <phase duration="3"  state="rrrrryyyyyrrrrryyyyy"/>
+        <phase duration="5"  state="rrrrryyyyyrrrrryyyyy"/>
     </tlLogic>
 
     <junction id="east_end" type="priority" x="200.00" y="100.00" incLanes="east_out_0 east_out_1" intLanes=":east_end_0_0" shape="200.00,100.00 200.00,93.60 200.00,100.00">
