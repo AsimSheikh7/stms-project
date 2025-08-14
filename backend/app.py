@@ -17,10 +17,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 CORS(app)
 
-# SQLite DB file
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///stms.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["JWT_SECRET_KEY"] = "your-secret-key-change-this-in-production"  # TODO: Will update it to use env
+# Load config from config.py
+app.config.from_object(DevelopmentConfig)
 
 db.init_app(app)
 
@@ -107,11 +105,11 @@ def login():
         user = User.query.filter_by(email=username).first()
         
         if user and check_password_hash(user.password_hash, password):
-            # Generate JWT token
+            # Generate JWT token - using config value
             token = jwt.encode({
                 'email': user.email,
                 'role': user.role,
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
             }, app.config['JWT_SECRET_KEY'], algorithm='HS256')
             
             return jsonify({
@@ -120,7 +118,7 @@ def login():
                     'email': user.email,
                     'role': user.role
                 },
-                'expires_in': 24 * 60 * 60  # 24 hours in seconds
+                'expires_in': app.config['JWT_EXPIRATION_HOURS'] * 60 * 60  # hours to seconds
             }), 200
         
         return jsonify({'message': 'Invalid credentials'}), 401
