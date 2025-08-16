@@ -15,7 +15,18 @@ from models import db, User, Simulation, TrafficData
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-CORS(app)
+CORS(app,supports_credentials=True)
+# For more fine grained control on CORS
+# CORS(app, 
+#      origins=[
+#          "http://localhost:3000",      # React development server
+#          "http://127.0.0.1:5000",      # Flask server
+#          # Add deployment domain if ever deployed lol
+#      ],
+#      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+#      allow_headers=["Content-Type", "Authorization"],
+#      supports_credentials=True
+# )
 
 # Load config from config.py
 app.config.from_object(DevelopmentConfig)
