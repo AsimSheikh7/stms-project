@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import { useAuth } from "@/components/providers/auth-provider";
+import { usePathname } from "next/navigation";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
   const userDetails = useAuth();
-  console.log(userDetails.user?.username, userDetails.user?.email);
+ 
 
   // Nav data
   const data = {
@@ -30,19 +32,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     navMain: [
       {
         title: "Dashboard",
-        url: "/dashboard",
+        url: "/home/dashboard",
         icon: LayoutDashboard,
-        isActive: true,
-        // No items property - this will be a regular nav item
+  
       },
       {
         title: "Traffic Management",
-        url: "#",
+        url: "/home/traffic-management",
         icon: TrafficCone,
       },
       {
         title: "User Management",
-        url: "#",
+        url: "/home/user-management",
         icon: Users,
       },
     ],
@@ -65,7 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenuButton>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={data.navMain} currentPath={pathname} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
