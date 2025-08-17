@@ -40,13 +40,15 @@ current_simulation_id = None
 
 
 def ensure_db_and_default_user():
-    """Create tables and default admin user (email='admin', password='admin') if missing."""
+    """Create tables and default admin user (username='admin', password='admin') if missing."""
     with app.app_context():
         db.create_all()
-        admin_email = "admin"
-        admin = User.query.filter_by(email=admin_email).first()
+        admin_username= "admin"
+        admin_email = "admin@gmail.com"
+        admin = User.query.filter_by(username=admin_username).first()
         if not admin:
             admin = User(
+                username= admin_username,
                 email=admin_email,
                 password_hash=generate_password_hash("admin"),
                 role="admin",
@@ -113,11 +115,12 @@ def login():
     password = data['password']
     
     with app.app_context():
-        user = User.query.filter_by(email=username).first()
+        user = User.query.filter_by(username=username).first()
         
         if user and check_password_hash(user.password_hash, password):
             # Generate JWT token - using config value
             token = jwt.encode({
+                'username': user.username,
                 'email': user.email,
                 'role': user.role,
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=app.config['JWT_EXPIRATION_HOURS'])
@@ -126,6 +129,7 @@ def login():
             return jsonify({
                 'token': token,
                 'user': {
+                    'username': user.username,
                     'email': user.email,
                     'role': user.role
                 },
@@ -142,10 +146,11 @@ def create_user(current_user):
     """Create a new user (admin only)."""
     data = request.get_json()
     
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({'message': 'Username and password required'}), 400
+    if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+        return jsonify({'message': 'Username, email and password required'}), 400
     
     username = data['username']
+    email = data['email']
     password = data['password']
     role = data.get('role', 'user')  # Default to 'user' role
     
@@ -155,13 +160,14 @@ def create_user(current_user):
     
     with app.app_context():
         # Check if user already exists
-        existing_user = User.query.filter_by(email=username).first()
+        existing_user = User.query.filter_by(username=username).first()
         if existing_user:
             return jsonify({'message': 'User already exists'}), 409
         
         # Create new user
         new_user = User(
-            email=username,
+            username=username,
+            email=email,
             password_hash=generate_password_hash(password),
             role=role
         )
@@ -173,6 +179,7 @@ def create_user(current_user):
             return jsonify({
                 'message': 'User created successfully',
                 'user': {
+                    'username': new_user.username,
                     'email': new_user.email,
                     'role': new_user.role
                 }
@@ -193,6 +200,7 @@ def list_users(current_user):
         return jsonify([
             {
                 'id': user.id,
+                'username': user.username,
                 'email': user.email,
                 'role': user.role
             } for user in users

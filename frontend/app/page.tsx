@@ -1,12 +1,5 @@
-import { ProtectedRoute } from "@/components/protected-route";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <div>
-      <ProtectedRoute>
-        <ThemeSwitcher />
-      </ProtectedRoute>
-    </div>
-  );
+  redirect("/dashboard");
 }

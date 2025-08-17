@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, AuthResponse, LoginCredentials, AuthContextType } from '@/types/auth';
+import { redirect } from 'next/navigation';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -72,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('token_expiry');
     setToken(null);
     setUser(null);
+    redirect("/login");
   };
 
   const value = {
