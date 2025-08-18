@@ -1,25 +1,13 @@
 export interface User {
-  email:string;
   username: string;
+  email: string;
   role: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  expires_in: number;
-  user: User;
-}
-
-export interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-export interface AuthContextType {
-  user: User | null;
+export interface AuthState {
   token: string | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  user: User | null;
+  expiresIn: number | null;
+  login: (token: string, user: User, expiresIn: number) => void;
   logout: () => void;
-  isAuthenticated: boolean;
-  isLoading: boolean;
 }

@@ -14,19 +14,18 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
-import { useAuth } from "@/components/providers/auth-provider";
 import { usePathname } from "next/navigation";
+import { useAuthStore } from "@/store/auth.store";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const userDetails = useAuth();
- 
+  const user = useAuthStore((s) => s.user);
 
   // Nav data
   const data = {
     user: {
-      name: userDetails.user?.username || "",
-      email: userDetails.user?.email || "",
+      name: user?.username || "",
+      email: user?.email || "",
       avatar: "/avatars/shadcn.jpg",
     },
     navMain: [
@@ -34,7 +33,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Dashboard",
         url: "/home/dashboard",
         icon: LayoutDashboard,
-  
       },
       {
         title: "Traffic Management",

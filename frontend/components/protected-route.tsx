@@ -1,30 +1,29 @@
-'use client'
-import { useAuth } from "@/components/providers/auth-provider";
-import { Loader2 } from "lucide-react";
+"use client";
+import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const token = useAuthStore((s) => s.token);
   const router = useRouter();
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+    const result = useAuthStore.persist.rehydrate();
+    if (result && typeof result.then === "function") {
+      result.then(() => setHydrated(true));
+    } else {
+      setHydrated(true);
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (hydrated && !token) {
+      router.replace("/login");
+    }
+  }, [hydrated, token, router]);
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!hydrated) return null; // to avoid flicker
 
   return <>{children}</>;
 }

@@ -4,14 +4,14 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 const HomeLayout = ({ children }: { children: React.ReactNode }) => {
   return (
+    <ProtectedRoute>
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <ProtectedRoute>
         <main>{children}</main>
-        </ProtectedRoute>
       </SidebarInset>
     </SidebarProvider>
+    </ProtectedRoute>
   );
 };
 
