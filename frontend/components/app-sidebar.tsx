@@ -1,5 +1,4 @@
 "use client";
-
 import * as React from "react";
 import { LayoutDashboard, TrafficCone, Users } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
@@ -21,6 +20,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
 
+  // Base nav items
+  const baseNavItems = [
+    {
+      title: "Dashboard",
+      url: "/home/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Traffic Management",
+      url: "/home/traffic-management",
+      icon: TrafficCone,
+    },
+  ];
+
+  // Admin-only nav items
+  const adminNavItems = [
+    {
+      title: "User Management",
+      url: "/home/user-management",
+      icon: Users,
+    },
+  ];
+
+  // Filter nav items based on user role
+  const navItems = user?.role === "admin" 
+    ? [...baseNavItems, ...adminNavItems]
+    : baseNavItems;
+
   // Nav data
   const data = {
     user: {
@@ -28,23 +55,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       email: user?.email || "",
       avatar: "/avatars/shadcn.jpg",
     },
-    navMain: [
-      {
-        title: "Dashboard",
-        url: "/home/dashboard",
-        icon: LayoutDashboard,
-      },
-      {
-        title: "Traffic Management",
-        url: "/home/traffic-management",
-        icon: TrafficCone,
-      },
-      {
-        title: "User Management",
-        url: "/home/user-management",
-        icon: Users,
-      },
-    ],
+    navMain: navItems,
   };
 
   return (

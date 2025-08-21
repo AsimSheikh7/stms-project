@@ -11,3 +11,4 @@ export interface AuthState {
   login: (token: string, user: User, expiresIn: number) => void;
   logout: () => void;
 }
+
