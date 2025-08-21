@@ -405,6 +405,29 @@ def get_traffic_for_sim(current_user, simulation_id):
         ])
 
 
+@app.route("/api/dashboard/summary", methods=["GET"])
+@token_required
+def dashboard_summary(current_user):
+    with app.app_context():
+        total_sims = Simulation.query.count()
+        total_vehicles = db.session.query(db.func.sum(TrafficData.vehicle_count)).scalar() or 0
+        avg_queue = db.session.query(db.func.avg(TrafficData.queue_length)).scalar() or 0
+        emergency_count = db.session.query(db.func.count()).filter(TrafficData.emergency == True).scalar() or 0
+
+        current_sim = Simulation.query.filter(Simulation.end_time == None).first()
+
+        return jsonify({
+            "total_simulations": total_sims,
+            "total_vehicles": int(total_vehicles),
+            "avg_queue_length": float(avg_queue),
+            "emergencies_handled": int(emergency_count),
+            "current_simulation": {
+                "id": current_sim.id if current_sim else None,
+                "start_time": current_sim.start_time.isoformat() if current_sim else None
+            }
+        })
+
+
 if __name__ == "__main__":
     ensure_db_and_default_user()
     app.run(debug=True, port=5000)
