@@ -1,6 +1,8 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Plus, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth.store";
 import {
   Table,
@@ -45,6 +47,7 @@ export default function UserManagementPage() {
   const [users, setUsers] = useState<UserEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [createSuccess, setCreateSuccess] = useState(false);
@@ -69,19 +72,24 @@ export default function UserManagementPage() {
     setLoading(true);
     setError(null);
 
-    const response = await UserService.getAllUsers(token);
+    try {
+      const response = await UserService.getAllUsers(token);
 
-    if (response.error) {
-      setError(response.error);
-    } else if (response.data) {
-      setUsers(response.data);
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        setUsers(response.data);
+      }
+    } catch (err) {
+      setError("Failed to fetch users. Please try again later.");
+      console.error("fetchUsers error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateUser = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     if (!token) {
       setCreateError("No authentication token found");
@@ -92,35 +100,34 @@ export default function UserManagementPage() {
     setCreateError(null);
     setCreateSuccess(false);
 
-    const response = await UserService.createUser(token, formData);
+    try {
+      const response = await UserService.createUser(token, formData);
 
-    if (response.error) {
-      setCreateError(response.error);
-    } else {
-      setCreateSuccess(true);
-      // Reset form
-      setFormData({
-        username: "",
-        email: "",
-        password: "",
-        role: "user",
-      });
+      if (response.error) {
+        setCreateError(response.error);
+      } else {
+        setCreateSuccess(true);
+        // Reset form
+        resetCreateForm();
 
-      // Refresh users list
-      await fetchUsers();
+        // Refresh users list
+        await fetchUsers();
 
-      // Close dialog after 1.5 seconds
-      setTimeout(() => {
+        toast.success("User created successfully!");
+        // Keep dialog open but show success message
         setIsCreateDialogOpen(false);
-        setCreateSuccess(false);
-      }, 1500);
+      }
+    } catch (err) {
+      setCreateError("Failed to create user. Please try again later.");
+      console.error("handleCreateUser error:", err);
+    } finally {
+      setCreateLoading(false);
     }
-
-    setCreateLoading(false);
   };
 
   const handleInputChange = (field: keyof CreateUserRequest, value: string) => {
-    setFormData((prev) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setFormData((prev: any) => ({
       ...prev,
       [field]: value,
     }));
@@ -150,7 +157,7 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     fetchUsers();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (loading) {
@@ -254,7 +261,6 @@ export default function UserManagementPage() {
                 <Select
                   value={formData.role}
                   onValueChange={(value) => handleInputChange("role", value)}
-                  
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a role" />
