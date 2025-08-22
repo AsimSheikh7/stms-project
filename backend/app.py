@@ -409,6 +409,7 @@ def get_traffic_for_sim(current_user, simulation_id):
 @token_required
 def dashboard_summary(current_user):
     with app.app_context():
+        # Global stats
         total_sims = Simulation.query.count()
         total_vehicles = db.session.query(db.func.sum(TrafficData.vehicle_count)).scalar() or 0
         avg_queue = db.session.query(db.func.avg(TrafficData.queue_length)).scalar() or 0
@@ -416,15 +417,37 @@ def dashboard_summary(current_user):
 
         current_sim = Simulation.query.filter(Simulation.end_time == None).first()
 
+        # Per-simulation aggregates (last 5 simulations, newest first)
+        sims = Simulation.query.order_by(Simulation.id.desc()).limit(5).all()
+        sim_summaries = []
+        for s in sims:
+            stats = db.session.query(
+                db.func.sum(TrafficData.vehicle_count),
+                db.func.avg(TrafficData.queue_length),
+                db.func.count().filter(TrafficData.emergency == True)
+            ).filter(TrafficData.simulation_id == s.id).first()
+
+            sim_summaries.append({
+                "id": s.id,
+                "start_time": s.start_time.isoformat(),
+                "end_time": s.end_time.isoformat() if s.end_time else None,
+                "total_vehicles": int(stats[0] or 0),
+                "avg_queue_length": float(stats[1] or 0),
+                "emergencies": int(stats[2] or 0)
+            })
+
         return jsonify({
-            "total_simulations": total_sims,
-            "total_vehicles": int(total_vehicles),
-            "avg_queue_length": float(avg_queue),
-            "emergencies_handled": int(emergency_count),
-            "current_simulation": {
-                "id": current_sim.id if current_sim else None,
-                "start_time": current_sim.start_time.isoformat() if current_sim else None
-            }
+            "global": {
+                "total_simulations": total_sims,
+                "total_vehicles": int(total_vehicles),
+                "avg_queue_length": float(avg_queue),
+                "emergencies_handled": int(emergency_count),
+                "current_simulation": {
+                    "id": current_sim.id if current_sim else None,
+                    "start_time": current_sim.start_time.isoformat() if current_sim else None
+                }
+            },
+            "recent_simulations": sim_summaries
         })
 
 
