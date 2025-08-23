@@ -306,28 +306,29 @@ def store_sensor_readings(sensors):
 @token_required
 def sensors(current_user):
     global traci, sensor_generator
+
     try:
-        # If no sim or it ended, close it properly
+        # If no sim or sim has ended
         if not traci or traci.simulation.getMinExpectedNumber() == 0:
-            end_current_simulation()   # <-- ensure DB gets updated
-            if not restart_simulation():
-                return jsonify({"error": "Failed to start SUMO simulation"}), 500
+            end_current_simulation()  # mark in DB
+            return jsonify({
+                "simulation_running": False,
+                "message": "No active simulation"
+            }), 200
 
         sensors = next(sensor_generator)  # may raise StopIteration
         store_sensor_readings(sensors)
-        sensors["simulation_id"] = current_simulation_id  # include id for frontend
-        return jsonify(sensors)
+        sensors["simulation_id"] = current_simulation_id
+        sensors["simulation_running"] = True
+        return jsonify(sensors), 200
 
     except StopIteration:
-        # explicit sim ended
+        # Simulation ended
         end_current_simulation()
-        if restart_simulation():
-            sensors = next(sensor_generator)
-            store_sensor_readings(sensors)
-            sensors["simulation_id"] = current_simulation_id
-            return jsonify(sensors)
-        else:
-            return jsonify({"error": "Failed to restart SUMO simulation"}), 500
+        return jsonify({
+            "simulation_running": False,
+            "message": "Simulation ended"
+        }), 200
 
     except Exception as e:
         print(f"Error in /api/sensors: {e}\n{traceback.format_exc()}")
@@ -339,35 +340,46 @@ def sensors(current_user):
 def signal(current_user):
     global traci, sensor_generator
     try:
+        # If no sim or sim ended
         if not traci or traci.simulation.getMinExpectedNumber() == 0:
             end_current_simulation()
-            if not restart_simulation():
-                return jsonify({"error": "Failed to start SUMO simulation"}), 500
+            return jsonify({
+                "simulation_running": False,
+                "message": "No active simulation"
+            }), 200
 
         data = request.json or {}
         mode = data.get("mode", "auto")
         sensors = {"mode": mode}
+
         if mode == "manual":
             sensors["lane"] = data.get("lane")
             sensors["state"] = data.get("state")
             sensors["emergency"] = False
             sensors["emergency_lane"] = None
         else:
-            # include latest sensor data (this also stores to DB in /api/sensors)
-            sensors.update(next(sensor_generator))
+            sensors.update(next(sensor_generator))  # reuse current sensor data
 
         set_signal_state(traci, "junction1", sensors)
-        return jsonify({"status": "Signal updated", "mode": mode})
+
+        return jsonify({
+            "status": "Signal updated",
+            "mode": mode,
+            "simulation_running": True,
+            "simulation_id": current_simulation_id
+        }), 200
+
     except StopIteration:
-        # simulation ended
         end_current_simulation()
-        if restart_simulation():
-            return jsonify({"status": "Simulation restarted due to end"})
-        else:
-            return jsonify({"error": "Failed to restart SUMO simulation"}), 500
+        return jsonify({
+            "simulation_running": False,
+            "message": "Simulation ended"
+        }), 200
+
     except Exception as e:
         print(f"Error in /api/signal: {e}\n{traceback.format_exc()}")
         return jsonify({"error": "Internal server error"}), 500
+    
 
 @app.route("/api/simulations/start", methods=["POST"])
 @token_required

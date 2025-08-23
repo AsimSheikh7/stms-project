@@ -479,7 +479,7 @@ export default function Page() {
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
                     data={summary.recent_simulations.slice().reverse()}
-                    barSize={80}
+                    barSize={60}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis

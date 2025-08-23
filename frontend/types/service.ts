@@ -57,9 +57,14 @@ export interface SignalUpdateRequest {
 }
 
 export interface SensorsResponse {
+  simulation_running: boolean;
+  message?: string;
+
   mode: "auto" | "manual";
   emergency: boolean;
   emergency_lane: string | null;
+  avg_speed: Record<string, number>;
+  queue_length: Record<string, number>;
   [lane: string]:
     | number
     | string
@@ -67,16 +72,15 @@ export interface SensorsResponse {
     | null
     | Record<string, number>
     | undefined;
-
-  avg_speed: Record<string, number>;
-  queue_length: Record<string, number>;
 }
 
 export interface SignalResponse {
-  mode: "auto" | "manual";
-  status: string; // e.g., "Signal updated"
+  simulation_running: boolean;
+  message?: string;
+  status?: string;
+  mode?: "auto" | "manual";
+  simulation_id?: number;
 }
-
 
 export interface ApiResponse<T> {
   data?: T;
