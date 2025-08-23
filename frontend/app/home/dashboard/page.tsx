@@ -73,7 +73,7 @@ export default function Page() {
       label: "Queue Length",
       color: "var(--color-chart-3)",
     },
-   
+
     speed: {
       label: "Avg Speed",
       color: "var(--color-chart-4)",
@@ -450,7 +450,7 @@ export default function Page() {
                       stroke="var(--color-primary)"
                       fill="var(--color-primary)"
                       fillOpacity={0.1}
-                      name="Total Vehicles"
+                      name=" Total Vehicles"
                     />
                     <Line
                       yAxisId="right"
@@ -477,7 +477,10 @@ export default function Page() {
             <CardContent>
               <ChartContainer config={chartConfig}>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={summary.recent_simulations.slice().reverse()}>
+                  <BarChart
+                    data={summary.recent_simulations.slice().reverse()}
+                    barSize={80}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="id"

@@ -41,6 +41,43 @@ export interface SimulationEntity {
   end_time: string | null;
 }
 
+export interface SensorData {
+  mode: string;
+  emergency: boolean;
+  emergency_lane: string | null;
+  queue_length: Record<string, number>;
+  avg_speed: Record<string, number>;
+  [lane: string]: unknown; // for lane counts like "north_in_0"
+}
+
+export interface SignalUpdateRequest {
+  mode: "auto" | "manual";
+  lane?: string;
+  state?: string; // e.g., "G", "R", "Y"
+}
+
+export interface SensorsResponse {
+  mode: "auto" | "manual";
+  emergency: boolean;
+  emergency_lane: string | null;
+  [lane: string]:
+    | number
+    | string
+    | boolean
+    | null
+    | Record<string, number>
+    | undefined;
+
+  avg_speed: Record<string, number>;
+  queue_length: Record<string, number>;
+}
+
+export interface SignalResponse {
+  mode: "auto" | "manual";
+  status: string; // e.g., "Signal updated"
+}
+
+
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
