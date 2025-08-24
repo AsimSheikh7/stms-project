@@ -8,7 +8,7 @@ def start_simulation():
         if not os.path.exists(config_path):
             print(f"Error: SUMO config file not found at {config_path}")
             return None
-        traci.start(["sumo-gui", "-c", config_path])
+        traci.start(["sumo", "-c", config_path])
         print("SUMO simulation started successfully")
         return traci
     except traci.exceptions.TraCIException as e:
