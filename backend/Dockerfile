@@ -3,9 +3,9 @@ FROM python:3.13-slim
 
 # Install SUMO + system deps
 RUN apt-get update && apt-get install -y \
-    sumo sumo-tools sumo-doc \
-    libglib2.0-0 libsm6 libxext6 libxrender-dev \
-    && rm -rf /var/lib/apt/lists/*
+    sumo sumo-tools sumo-doc 
+    # libglib2.0-0 libsm6 libxext6 libxrender-dev \
+    # && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

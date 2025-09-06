@@ -4,5 +4,4 @@ Flask-SQLAlchemy
 flask-jwt-extended
 python-dotenv
 traci
-eclipse-sumo
 dotenv
