@@ -59,7 +59,7 @@ export interface SignalUpdateRequest {
 export interface SensorsResponse {
   simulation_running: boolean;
   message?: string;
-
+  simulation_id?: number;
   mode: "auto" | "manual";
   emergency: boolean;
   emergency_lane: string | null;

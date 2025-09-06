@@ -30,6 +30,15 @@ import {
   Activity,
   TrendingUp,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Page() {
   const token = useAuthStore((state) => state.token);
@@ -38,6 +47,8 @@ export default function Page() {
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+  const [selectedSim, setSelectedSim] = useState<string | null>(null);
+  const [selectedForCompare, setSelectedForCompare] = useState<number[]>([]);
 
   const fetchData = async () => {
     if (!token) return;
@@ -408,6 +419,99 @@ export default function Page() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Report Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Generate Reports</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Select Simulation ID
+            </p>
+            <Select onValueChange={(value) => setSelectedSim(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a simulation" />
+              </SelectTrigger>
+              <SelectContent>
+                {summary?.recent_simulations.map((sim) => (
+                  <SelectItem key={sim.id} value={String(sim.id)}>
+                    Simulation #{sim.id} ({sim.start_time})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={!selectedSim}
+              onClick={() =>
+                DashboardService.downloadSimulationPdf(
+                  token ?? "",
+                  Number(selectedSim)
+                ).catch(() => toast.error("Failed to download PDF"))
+              }
+            >
+              Download PDF
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!selectedSim}
+              onClick={() =>
+                DashboardService.downloadSimulationExcel(
+                  token ?? "",
+                  Number(selectedSim)
+                ).catch(() => toast.error("Failed to download Excel"))
+              }
+            >
+              Download Excel
+            </Button>
+          </div>
+
+          {/* Comparison: multi-select */}
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Select Simulations for Comparison
+            </p>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border p-2 rounded">
+              {summary?.recent_simulations.map((sim) => (
+                <label key={sim.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    value={sim.id}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedForCompare((prev) => [...prev, sim.id]);
+                      } else {
+                        setSelectedForCompare((prev) =>
+                          prev.filter((id) => id !== sim.id)
+                        );
+                      }
+                    }}
+                  />
+                  Simulation #{sim.id}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            disabled={selectedForCompare.length < 2}
+            onClick={() =>
+              DashboardService.downloadComparisonExcel(
+                token ?? "",
+                selectedForCompare
+              ).catch(() => toast.error("Failed to download Comparison Excel"))
+            }
+          >
+            Compare Report
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Charts - Show if multiple simulations exist */}
       {summary?.recent_simulations && summary.recent_simulations.length > 1 && (

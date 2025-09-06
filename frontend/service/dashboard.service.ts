@@ -53,4 +53,61 @@ export class DashboardService {
       };
     }
   }
+
+  static async downloadSimulationPdf(token: string, simId: number) {
+    const response = await fetch(
+      `${API_BASE_URL}/reports/simulation/${simId}.pdf`,
+      {
+        method: "GET",
+        headers: this.getAuthHeaders(token),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to download PDF");
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `simulation_${simId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  // Download a simulation Excel
+  static async downloadSimulationExcel(token: string, simId: number) {
+    const response = await fetch(
+      `${API_BASE_URL}/reports/simulation/${simId}.xlsx`,
+      {
+        method: "GET",
+        headers: this.getAuthHeaders(token),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to download Excel");
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `simulation_${simId}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  // Download a comparison Excel for multiple simulations
+  static async downloadComparisonExcel(token: string, simIds: number[]) {
+    const response = await fetch(`${API_BASE_URL}/reports/comparison.xlsx`, {
+      method: "POST",
+      headers: this.getAuthHeaders(token),
+      body: JSON.stringify({ simulation_ids: simIds }),
+    });
+    if (!response.ok) throw new Error("Failed to download comparison Excel");
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `simulation_comparison.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
 }

@@ -5,7 +5,8 @@ import datetime
 import jwt
 from functools import wraps
 from config import DevelopmentConfig
-
+from reports import generate_simulation_pdf, generate_simulation_excel, generate_comparison_excel
+from flask import send_file
 
 # traci will be imported/used by simulation.start_simulation
 import traci as traci_module
@@ -471,6 +472,38 @@ def dashboard_summary(current_user):
             "recent_simulations": sim_summaries
         })
 
+@app.route("/api/reports/simulation/<int:sim_id>.pdf", methods=["GET"])
+@token_required
+def simulation_report_pdf(current_user, sim_id):
+    buffer = generate_simulation_pdf(sim_id)
+    if not buffer:
+        return jsonify({"error": "Simulation not found"}), 404
+    return send_file(buffer, as_attachment=True, download_name=f"simulation_{sim_id}.pdf", mimetype="application/pdf")
+
+@app.route("/api/reports/simulation/<int:sim_id>.xlsx", methods=["GET"])
+@token_required
+def simulation_report_excel(current_user, sim_id):
+    buffer = generate_simulation_excel(sim_id)
+    if not buffer:
+        return jsonify({"error": "Simulation not found"}), 404
+    return send_file(buffer, as_attachment=True, download_name=f"simulation_{sim_id}.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+@app.route("/api/reports/comparison.xlsx", methods=["POST"])
+@token_required
+def comparison_report_excel(current_user):
+    data = request.get_json() or {}
+    sim_ids = data.get("simulation_ids", [])
+
+    if not sim_ids or not isinstance(sim_ids, list):
+        return jsonify({"error": "simulation_ids must be a list"}), 400
+
+    buffer = generate_comparison_excel(sim_ids)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="simulation_comparison.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 if __name__ == "__main__":
     ensure_db_and_default_user()

@@ -10,7 +10,9 @@ export class TrafficManagementService {
   }
 
   // GET sensors
-  static async getSensors(token: string): Promise<ApiResponse<SensorsResponse>> {
+  static async getSensors(
+    token: string
+  ): Promise<ApiResponse<SensorsResponse>> {
     try {
       const response = await fetch(`${API_BASE_URL}/sensors`, {
         method: "GET",
@@ -37,7 +39,8 @@ export class TrafficManagementService {
     } catch (error) {
       console.error("Error fetching sensors:", error);
       return {
-        error: error instanceof Error ? error.message : "Failed to fetch sensors",
+        error:
+          error instanceof Error ? error.message : "Failed to fetch sensors",
       };
     }
   }
@@ -74,7 +77,8 @@ export class TrafficManagementService {
     } catch (error) {
       console.error("Error updating signal:", error);
       return {
-        error: error instanceof Error ? error.message : "Failed to update signal",
+        error:
+          error instanceof Error ? error.message : "Failed to update signal",
       };
     }
   }
@@ -126,4 +130,6 @@ export class TrafficManagementService {
       };
     }
   }
+
+  
 }

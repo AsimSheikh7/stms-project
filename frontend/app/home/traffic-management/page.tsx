@@ -16,6 +16,8 @@ export default function Page() {
   const [sensors, setSensors] = useState<SensorsResponse | null>(null);
   const [mode, setMode] = useState<"auto" | "manual">("auto");
   const [lastEmergency, setLastEmergency] = useState(false);
+  const [selectedSim, setSelectedSim] = useState<string | null>(null);
+  const [selectedForCompare, setSelectedForCompare] = useState<number[]>([]);
 
   // Fetch sensors periodically
   useEffect(() => {
@@ -62,12 +64,9 @@ export default function Page() {
     const newMode: "auto" | "manual" = checked ? "manual" : "auto";
     setMode(newMode);
     setLoading(true);
-    const { error } = await TrafficManagementService.updateSignal(
-      token ?? "",
-      {
-        mode: newMode,
-      }
-    );
+    const { error } = await TrafficManagementService.updateSignal(token ?? "", {
+      mode: newMode,
+    });
     setLoading(false);
     if (error) {
       console.error(error);
